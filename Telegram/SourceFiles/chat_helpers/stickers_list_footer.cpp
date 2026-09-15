@@ -1231,6 +1231,7 @@ void StickersListFooter::validateIconWebmAnimation(
 		const StickerIcon &icon) {
 	icon.ensureMediaCreated();
 	if (icon.webm
+		|| icon.webm.isBad()
 		|| !icon.sticker
 		|| !HasWebmThumbnail(
 			icon.set ? icon.set->thumbnailType() : StickerType(),

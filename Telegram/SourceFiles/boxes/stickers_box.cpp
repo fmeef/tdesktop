@@ -1599,6 +1599,7 @@ void StickersBox::Inner::validateLottieAnimation(not_null<Row*> row) {
 
 void StickersBox::Inner::validateWebmAnimation(not_null<Row*> row) {
 	if (row->webm
+		|| row->webm.isBad()
 		|| !ChatHelpers::HasWebmThumbnail(
 			row->set->thumbnailType(),
 			row->thumbnailMedia.get(),
