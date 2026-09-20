@@ -5,7 +5,7 @@
 # https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 cmake_minimum_required(VERSION 3.25...3.31)
-
+add_definitions(-DMETA_NO_STD_FORWARD_DECLARATIONS)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(cmake/validate_special_target.cmake)
