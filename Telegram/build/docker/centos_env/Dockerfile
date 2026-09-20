@@ -160,7 +160,7 @@ RUN <<EOF
 git init patches
 cd patches
 git remote add origin https://github.com/desktop-app/patches.git
-git fetch --depth=1 origin c2cc44fca4a8d0e20d1ef0f40884d717c750f0a4
+git fetch --depth=1 origin 519aaa084608fa6f9a2bfbd1959d133c44d94227
 git reset --hard FETCH_HEAD
 rm -rf .git
 EOF
@@ -286,7 +286,7 @@ EOF
 
 FROM builder AS de265
 RUN --mount=type=cache,target=/var/cache/ccache <<EOF
-git clone -b v1.1.1 --depth=1 https://github.com/strukturag/libde265.git
+git clone -b v1.1.3 --depth=1 https://github.com/strukturag/libde265.git
 cd libde265
 cmake -B build . \
 	-DCMAKE_BUILD_TYPE=None \
@@ -358,7 +358,7 @@ FROM builder AS heif
 COPY --link --from=de265 /usr/src/de265-cache /
 
 RUN --mount=type=cache,target=/var/cache/ccache <<EOF
-git clone -b v1.23.1 --depth=1 https://github.com/strukturag/libheif.git
+git clone -b v1.23.4 --depth=1 https://github.com/strukturag/libheif.git
 cd libheif
 cmake -B build . \
 	-DBUILD_SHARED_LIBS=OFF \
@@ -1001,7 +1001,7 @@ cd ..
 rm -rf tde2e
 EOF
 
-FROM builder AS tlottie
+FROM patches AS tlottie
 RUN <<EOF
 RUST_TOOLCHAIN=1.96.1
 export RUSTUP_HOME=/usr/src/rustup
@@ -1015,8 +1015,9 @@ export DESTDIR=/usr/src/tlottie-cache
 git init tlottie
 cd tlottie
 git remote add origin https://github.com/dkaraush/tlottie.git
-git fetch --depth=1 origin 4b940c7942fbde8ee56f10f39a5224a4153bd91e
+git fetch --depth=1 origin 31f1b542f88e7b4be9a01e749920d857535fc715
 git reset --hard FETCH_HEAD
+git apply ../patches/tlottie.patch
 cargo rustc --lib --release --locked \
 	--features c-api --crate-type staticlib \
 	--target x86_64-unknown-linux-gnu \
