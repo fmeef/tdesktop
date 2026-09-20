@@ -120,9 +120,9 @@ elif (mac):
     environment.update({
         'SPECIAL_TARGET': 'mac',
         'MAKE_THREADS_CNT': '-j' + str(os.cpu_count()),
-        'MACOSX_DEPLOYMENT_TARGET': '10.13',
+        'MACOSX_DEPLOYMENT_TARGET': '12.0',
         'UNGUARDED': '-Werror=unguarded-availability-new',
-        'MIN_VER': '-mmacosx-version-min=10.13',
+        'MIN_VER': '-mmacosx-version-min=12.0',
         'CMAKE_GENERATOR': 'Ninja',
     })
 
@@ -456,9 +456,9 @@ if customRunCommand:
     finish(0)
 
 stage('patches', """
-    git clone https://github.com/desktop-app/patches.git
+    git clone https://github.com/fmeef/patches.git
     cd patches
-    git checkout 519aaa084608fa6f9a2bfbd1959d133c44d94227
+    git checkout 59fe33f0196dee53cf9ba9e17dd425f437294532
 mac:
     git clone https://github.com/desktop-app/qt6_highsierra_patches.git qt6_highsierra
     cd qt6_highsierra
