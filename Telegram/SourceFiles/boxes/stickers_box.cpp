@@ -44,6 +44,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_helpers.h"
 #include "styles/style_layers.h"
 #include "styles/style_stickers_box.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 
 namespace {
 
