@@ -53,6 +53,10 @@ public:
 		bool pressed);
 	[[nodiscard]] virtual bool hasHeavyPart();
 	virtual void unloadHeavyPart();
+	virtual void hideSpoilers();
+	[[nodiscard]] virtual Media::BubbleRoll bubbleRoll(QSize outer) const;
+	[[nodiscard]] virtual QMargins bubbleRollRepaintMargins(
+		QSize outer) const;
 	[[nodiscard]] virtual auto stickerTakePlayer(
 		not_null<DocumentData*> data,
 		const Lottie::ColorReplacements *replacements
@@ -92,6 +96,7 @@ public:
 	[[nodiscard]] bool service() const {
 		return _service;
 	}
+	[[nodiscard]] Part *partAt(int index) const;
 
 	void draw(Painter &p, const PaintContext &context) const override;
 	TextState textState(QPoint point, StateRequest request) const override;
@@ -135,6 +140,9 @@ public:
 
 	void unloadHeavyPart() override;
 	bool hasHeavyPart() const override;
+	void hideSpoilers() override;
+	BubbleRoll bubbleRoll() const override;
+	QMargins bubbleRollRepaintMargins() const override;
 
 private:
 	struct Entry {
