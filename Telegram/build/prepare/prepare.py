@@ -2068,10 +2068,10 @@ win:
         target\\%RUST_TARGET%\\release\\tdesktop_rust.dll
     move out\\include\\wallet_engine\\wallet_engine.cpp out\\src\\wallet_engine\\wallet_engine.cpp
 mac:
-    export RUSTUP_HOME=$THIRDPARTY_DIR/rust/rustup
-    export CARGO_HOME=$THIRDPARTY_DIR/rust/cargo
-    export RUSTUP_TOOLCHAIN=""" + rustToolchain + """
-    export PATH=$CARGO_HOME/bin:$PATH
+    # export RUSTUP_HOME=$THIRDPARTY_DIR/rust/rustup
+    # export CARGO_HOME=$THIRDPARTY_DIR/rust/cargo
+    # export RUSTUP_TOOLCHAIN=""" + rustToolchain + """
+    # export PATH=$CARGO_HOME/bin:$PATH
     cargo new --lib --vcs none tdesktop_rust
     cd tdesktop_rust
     printf 'pub use ::tlottie;\\npub use ::wallet_engine;\\n' > src/lib.rs
