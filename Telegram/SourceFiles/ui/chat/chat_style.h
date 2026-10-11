@@ -34,10 +34,6 @@ namespace Ui::Text {
 class CustomEmoji;
 } // namespace Ui::Text
 
-namespace Wallet {
-class CardAngle;
-} // namespace Wallet
-
 namespace Ui {
 
 class ChatTheme;
@@ -444,7 +440,6 @@ public:
 	[[nodiscard]] not_null<BackgroundEmojiData*> backgroundEmojiData(
 		uint64 emojiId,
 		const std::shared_ptr<ColorCollectible> &collectible) const;
-	[[nodiscard]] not_null<Wallet::CardAngle*> gramCardAngle() const;
 
 	[[nodiscard]] const CornersPixmaps &msgBotKbOverBgAddCornersSmall() const;
 	[[nodiscard]] const CornersPixmaps &msgBotKbOverBgAddCornersLarge() const;
@@ -721,8 +716,6 @@ private:
 		CollectibleColors,
 		ColorCollectiblePtrCompare> _collectibleCaches;
 	mutable base::flat_map<uint64, BackgroundEmojiData> _backgroundEmojis;
-	mutable std::unique_ptr<Wallet::CardAngle> _gramCardAngle;
-
 	style::TextPalette _historyPsaForwardPalette;
 	style::TextPalette _imgReplyTextPalette;
 	style::TextPalette _serviceTextPalette;

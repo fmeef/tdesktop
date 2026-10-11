@@ -1919,10 +1919,6 @@ int Element::textHeightFor(int textWidth) const {
 
 auto Element::contextDependentServiceText() -> TextWithLinks {
 	const auto item = data();
-	if (item->Has<HistoryServiceGramTransfer>()) {
-		auto prepared = item->prepareGramTransferText(false);
-		return { std::move(prepared.text), std::move(prepared.links) };
-	}
 	const auto info = item->Get<HistoryServiceTopicInfo>();
 	if (!info) {
 		return {};

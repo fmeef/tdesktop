@@ -12,9 +12,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/system_unlock.h"
 #include "lang/lang_keys.h"
 #include "storage/serialize_common.h"
-#include "wallet/wallet_key_protection.h"
-#include "wallet/wallet_vault.h"
-
 #include <Foundation/Foundation.h>
 #include <LocalAuthentication/LocalAuthentication.h>
 #include <Security/Security.h>

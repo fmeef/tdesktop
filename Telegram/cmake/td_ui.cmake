@@ -79,7 +79,6 @@ set(style_files
     ui/controls/filter_link_header.style
     media/view/media_view.style
     overview/overview.style
-    wallet/wallet.style
     window/window.style
     window/window_main_menu.style
     editor/editor.style
@@ -719,14 +718,6 @@ PRIVATE
     ui/webview_helpers.h
     ui/window_palette.cpp
     ui/window_palette.h
-
-    wallet/wallet_card_angle.cpp
-    wallet/wallet_card_angle.h
-    wallet/wallet_card_gradient.cpp
-    wallet/wallet_card_gradient.h
-    wallet/wallet_sending_effects.cpp
-    wallet/wallet_sending_effects.h
-
     window/window_slide_animation.cpp
     window/window_slide_animation.h
 

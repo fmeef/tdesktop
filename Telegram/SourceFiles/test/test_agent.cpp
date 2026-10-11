@@ -11,7 +11,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "test/test_log.h"
 #include "ui/style/style_core_scale.h"
-#include "wallet/wallet_address.h"
 #include "settings.h"
 
 #include <QtCore/QFile>
@@ -101,8 +100,7 @@ const auto kGramAccountFile = u"test_gram_account.txt"_q;
 		const QString &addressRaw) {
 	const auto raw = ReadTrimmed(path);
 	const auto current = raw ? ParseGramAccount(*raw) : std::nullopt;
-	if (!current
-		|| Wallet::CanonicalAddress(current->address) != addressRaw) {
+	if (!current){
 		return false;
 	}
 	const auto content = (lines.join(u'\n')
@@ -280,18 +278,6 @@ QString GramAccountGoldenPath() {
 	return GoldenPath(kGramAccountFile);
 }
 
-std::optional<GramAccountFixture> GramAccount() {
-	const auto raw = FixtureSecret(kGramAccountFile);
-	if (!raw) {
-		return std::nullopt;
-	}
-	auto result = ParseGramAccount(*raw);
-	if (result) {
-		result->addressRaw = Wallet::CanonicalAddress(result->address);
-	}
-	return result;
-}
-
 GramAccountRewrite RewriteGramAccountWords(
 		const std::vector<QString> &words,
 		const QString &addressRaw) {
@@ -324,7 +310,6 @@ bool StageGramAccountLiveWords(
 	const auto raw = ReadTrimmed(path);
 	const auto current = raw ? ParseGramAccount(*raw) : std::nullopt;
 	if (!current
-		|| Wallet::CanonicalAddress(current->address) != addressRaw
 		|| prefix.size() >= current->words.size()
 		|| !std::equal(
 			prefix.begin(),
@@ -349,7 +334,6 @@ bool RestoreGramAccountLiveWords(
 	const auto raw = ReadTrimmed(path);
 	const auto current = raw ? ParseGramAccount(*raw) : std::nullopt;
 	if (!current
-		|| Wallet::CanonicalAddress(current->address) != addressRaw
 		|| current->words.size() >= words.size()
 		|| !std::equal(
 			current->words.begin(),

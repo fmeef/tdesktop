@@ -83,7 +83,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_context_menu.h"
 #include "history/view/history_view_schedule_box.h"
 #include "iv/editor/iv_editor_session.h"
-#include "wallet/wallet_panel.h"
 #include "window/window_separate_id.h"
 #include "window/window_session_controller.h"
 #include "window/window_controller.h"
@@ -4581,12 +4580,8 @@ void AddSendMoneyAction(
 			&& weakSession
 			&& &controller->session() == session
 			&& &user->session() == session
-			&& session->data().userLoaded(userId) == user
-			&& Wallet::CanOfferSendMoney(user);
+			&& session->data().userLoaded(userId) == user;
 	};
-	if (!canOffer()) {
-		return;
-	}
 	const auto activated = std::make_shared<bool>(false);
 	const auto sent = [=] {
 		if (weakController
@@ -4600,9 +4595,7 @@ void AddSendMoneyAction(
 		}
 	};
 	addAction(tr::lng_wallet_profile_send_money(tr::now), [=] {
-		if (canOffer() && !std::exchange(*activated, true)) {
-			Wallet::OpenSendMoney(controller, user, sent);
-		}
+
 	}, &st::walletMenuIcon);
 }
 

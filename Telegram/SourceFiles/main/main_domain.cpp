@@ -22,8 +22,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/storage_account.h"
 #include "storage/localstorage.h"
 #include "export/export_settings.h"
-#include "wallet/wallet_unlock.h"
-#include "wallet/wallet_vault.h"
 #include "window/notifications_manager.h"
 #include "window/window_controller.h"
 #include "data/data_peer_values.h" // Data::AmPremiumValue.
@@ -59,19 +57,6 @@ Domain::Domain(const QString &dataName)
 	}, _lifetime);
 }
 
-Domain::~Domain() {
-	if (_walletKeyring) {
-		_walletKeyring->clear();
-	}
-}
-
-Wallet::VaultRuntime &Domain::walletKeyring() {
-	if (!_walletKeyring) {
-		_walletKeyring = std::make_shared<Wallet::VaultRuntime>(*this);
-	}
-	return *_walletKeyring;
-}
-
 bool Domain::started() const {
 	return !_accounts.empty();
 }
@@ -87,7 +72,6 @@ Storage::StartResult Domain::startWith(
 	const auto result = _local->start(std::move(derived));
 	if (result == Storage::StartResult::Success) {
 		activateAfterStarting();
-		Wallet::DropUnusedPasscode();
 		crl::on_main(&Core::App(), [=] { suggestExportIfNeeded(); });
 	} else {
 		Assert(!started());
@@ -122,9 +106,6 @@ bool Domain::tryPasscode(
 }
 
 void Domain::finish() {
-	if (_walletKeyring) {
-		_walletKeyring->clear();
-	}
 	_accountToActivate = -1;
 	_active.reset(nullptr);
 	base::take(_accounts);
@@ -163,9 +144,6 @@ int Domain::activeForStorage() const {
 }
 
 void Domain::resetWithForgottenPasscode() {
-	if (_walletKeyring) {
-		_walletKeyring->clear();
-	}
 	if (_accounts.empty()) {
 		_local->startFromScratch();
 		activateAfterStarting();
@@ -534,9 +512,6 @@ void Domain::removeRedundantAccounts() {
 	// membership, including when its window keeps the account in the list.
 	// The last-logout case retains its checked clear and retry route, and
 	// passcodeRemovalAuthorized() stays true until that clear has landed.
-	if (!passcodeRemovalAuthorized()) {
-		Wallet::DropUnusedPasscode();
-	}
 }
 
 void Domain::checkForLastProductionConfig(

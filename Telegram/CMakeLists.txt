@@ -32,7 +32,6 @@ include(cmake/lib_prisma.cmake)
 include(cmake/lib_fido2.cmake)
 include(cmake/lib_zxcvbn.cmake)
 include(cmake/td_export.cmake)
-include(cmake/td_gram.cmake)
 include(cmake/td_iv.cmake)
 include(cmake/td_lang.cmake)
 include(cmake/td_mtproto.cmake)
@@ -75,7 +74,6 @@ PRIVATE
     tdesktop::lib_fido2
     tdesktop::lib_tgcalls
     tdesktop::td_export
-    tdesktop::td_gram
     tdesktop::td_iv
     tdesktop::td_lang
     tdesktop::td_mtproto
@@ -107,7 +105,6 @@ PRIVATE
     desktop-app::external_auto_updates
     desktop-app::external_openssl
     desktop-app::external_openal
-    desktop-app::external_wallet_engine
     desktop-app::external_xxhash
 )
 
@@ -1026,8 +1023,6 @@ PRIVATE
     history/view/media/history_view_gif.h
     history/view/media/history_view_giveaway.cpp
     history/view/media/history_view_giveaway.h
-    history/view/media/history_view_gram_transfer.cpp
-    history/view/media/history_view_gram_transfer.h
     history/view/media/history_view_invoice.cpp
     history/view/media/history_view_invoice.h
     history/view/media/history_view_large_emoji.cpp
@@ -1782,8 +1777,6 @@ PRIVATE
     platform/mac/translate_provider_mac.mm
     platform/mac/tray_mac.h
     platform/mac/tray_mac.mm
-    platform/mac/wallet_protection_mac.h
-    platform/mac/wallet_protection_mac.mm
     platform/mac/webauthn_mac.mm
     platform/mac/window_title_mac.mm
     platform/mac/touchbar/items/mac_formatter_item.h
@@ -1820,8 +1813,6 @@ PRIVATE
     platform/win/translate_provider_win.h
     platform/win/tray_win.cpp
     platform/win/tray_win.h
-    platform/win/wallet_protection_win.cpp
-    platform/win/wallet_protection_win.h
     platform/win/webauthn_win.cpp
     platform/win/windows_app_user_model_id.cpp
     platform/win/windows_app_user_model_id.h
@@ -2038,8 +2029,6 @@ PRIVATE
     test/test_custom_emoji.h
     test/test_gated_stage.cpp
     test/test_gated_stage.h
-    test/test_gram_reconcile.cpp
-    test/test_gram_reconcile.h
     test/test_history_fixtures.cpp
     test/test_history_fixtures.h
     test/test_hover.cpp
@@ -2095,10 +2084,6 @@ PRIVATE
     test/test_transfer.h
     test/test_via_window.cpp
     test/test_via_window.h
-    test/test_wallet_intercept.cpp
-    test/test_wallet_intercept.h
-    test/test_wallet_ready.cpp
-    test/test_wallet_ready.h
     test/test_web_cache.cpp
     test/test_web_cache.h
     test/test_wheel.cpp
@@ -2195,72 +2180,6 @@ PRIVATE
     ui/unread_badge.h
     ui/peer/video_userpic_player.cpp
     ui/peer/video_userpic_player.h
-    wallet/wallet_address.cpp
-    wallet/wallet_address.h
-    wallet/wallet_amount_field.cpp
-    wallet/wallet_amount_field.h
-    wallet/wallet_amount_painter.cpp
-    wallet/wallet_amount_painter.h
-    wallet/wallet_api.cpp
-    wallet/wallet_api.h
-    wallet/wallet_chat_show.cpp
-    wallet/wallet_chat_show.h
-    wallet/wallet_collectible_media.cpp
-    wallet/wallet_collectible_media.h
-    wallet/wallet_collectibles.cpp
-    wallet/wallet_collectibles.h
-    wallet/wallet_comment.cpp
-    wallet/wallet_comment.h
-    wallet/wallet_content.cpp
-    wallet/wallet_content.h
-    wallet/wallet_custody.cpp
-    wallet/wallet_custody.h
-    wallet/wallet_diamond_flight.cpp
-    wallet/wallet_diamond_flight.h
-    wallet/wallet_engine.cpp
-    wallet/wallet_engine.h
-    wallet/wallet_fiat.cpp
-    wallet/wallet_fiat.h
-    wallet/wallet_key_protection.cpp
-    wallet/wallet_key_protection.h
-    wallet/wallet_onramp.cpp
-    wallet/wallet_onramp.h
-    wallet/wallet_palette.cpp
-    wallet/wallet_palette.h
-    wallet/wallet_panel.cpp
-    wallet/wallet_panel.h
-    wallet/wallet_phrase_shares.cpp
-    wallet/wallet_phrase_shares.h
-    wallet/wallet_rates.cpp
-    wallet/wallet_rates.h
-    wallet/wallet_session.cpp
-    wallet/wallet_session.h
-    wallet/wallet_stream.cpp
-    wallet/wallet_stream.h
-    wallet/wallet_ton_connect.cpp
-    wallet/wallet_ton_connect.h
-    wallet/wallet_ton_connect_box.cpp
-    wallet/wallet_ton_connect_box.h
-    wallet/wallet_ton_connect_claims.cpp
-    wallet/wallet_ton_connect_claims.h
-    wallet/wallet_ton_connect_emulation.cpp
-    wallet/wallet_ton_connect_emulation.h
-    wallet/wallet_ton_connect_link.cpp
-    wallet/wallet_ton_connect_link.h
-    wallet/wallet_ton_connect_request.cpp
-    wallet/wallet_ton_connect_request.h
-    wallet/wallet_ton_connect_request_box.cpp
-    wallet/wallet_ton_connect_request_box.h
-    wallet/wallet_transfer_messages.cpp
-    wallet/wallet_transfer_messages.h
-    wallet/wallet_transfer_store.cpp
-    wallet/wallet_transfer_store.h
-    wallet/wallet_unlock.cpp
-    wallet/wallet_unlock.h
-    wallet/wallet_user_addresses.cpp
-    wallet/wallet_user_addresses.h
-    wallet/wallet_vault.cpp
-    wallet/wallet_vault.h
     webauthn/cable.h
     webauthn/cable_box.cpp
     webauthn/cable_box.h

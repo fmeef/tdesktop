@@ -36,9 +36,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/passcode_strength_meter.h"
 #include "ui/wrap/vertical_layout.h"
 #include "ui/wrap/slide_wrap.h"
-#include "wallet/wallet_key_protection.h"
-#include "wallet/wallet_session.h"
-#include "wallet/wallet_vault.h"
 #include "window/window_session_controller.h"
 #include "styles/style_boxes.h"
 #include "styles/style_layers.h"
@@ -228,53 +225,6 @@ void LeavePasscodeArea(
 	return result;
 }
 
-// The passcode bytes the Check section accepted are consumed by the Manage
-// and Change sections, which are different section objects created later by
-// the navigation stack, and each keeps its own copy for its lifetime. They
-// travel in the std::any the Info controller keeps for the whole settings
-// stack, the same channel CloudPassword::StepData uses, but only for the one
-// synchronous navigation hop that hands them over, in either direction: the
-// sender writes the carrier immediately before the hop, the receiving section
-// moves the bytes out of the std::any into a member of its own and resets the
-// any, so nothing lingers there, and a section that closes instead of hopping
-// takes its bytes straight back. std::any needs a copyable payload and
-// SecureBytes is move-only, so the carrier is a shared_ptr whose buffer the
-// move has already cleansed by the time the reset destroys it. So the bytes
-// live exactly as long as the section holding them - leaving by hand, by
-// removeFromStack or by the countdown destroys that section and cleanses
-// them - and a Manage section reached straight from settings search finds
-// nothing and asks for the passcode.
-struct PasscodeHandOver {
-	std::shared_ptr<Wallet::SecureBytes> bytes;
-};
-
-[[nodiscard]] Wallet::SecureBytes TakePasscode(std::any *stepData) {
-	if (!stepData || !stepData->has_value()) {
-		return {};
-	}
-	const auto carrier = std::any_cast<PasscodeHandOver>(stepData);
-	if (!carrier || !carrier->bytes) {
-		return {};
-	}
-	auto result = std::move(*carrier->bytes);
-	*stepData = std::any();
-	return result;
-}
-
-void WritePasscode(std::any *stepData, Wallet::SecureBytes bytes) {
-	if (stepData) {
-		*stepData = PasscodeHandOver{
-			std::make_shared<Wallet::SecureBytes>(std::move(bytes)),
-		};
-	}
-}
-
-[[nodiscard]] QByteArray Utf8Copy(const Wallet::SecureBytes &bytes) {
-	return QByteArray(
-		reinterpret_cast<const char*>(bytes.span().data()),
-		bytes.size());
-}
-
 } // namespace
 
 namespace details {
@@ -319,7 +269,6 @@ private:
 	rpl::event_stream<> _showBack;
 	rpl::event_stream<std::vector<Type>> _removeFromStack;
 	std::any *_stepData = nullptr;
-	Wallet::SecureBytes _passcode;
 	std::unique_ptr<PasscodeCountdown> _countdown;
 	bool _systemUnlockWithBiometric = false;
 	bool _deriving = false;
@@ -350,15 +299,8 @@ void LocalPasscodeEnter::setStepDataReference(std::any &data) {
 	// section that received no bytes goes to Check one turn later. Check
 	// and Create discard whatever carrier arrived.
 	_stepData = &data;
-	auto bytes = TakePasscode(_stepData);
 	if (enterType() != EnterType::Change) {
 		return;
-	}
-	_passcode = std::move(bytes);
-	if (_passcode.empty()) {
-		crl::on_main(this, [=] {
-			_showOther.fire(LocalPasscodeCheckId());
-		});
 	} else {
 		_countdown->restart();
 	}
@@ -369,7 +311,6 @@ void LocalPasscodeEnter::forgetAndCheck() {
 		leaveArea();
 		return;
 	}
-	_passcode.clear();
 	if (_countdown) {
 		_countdown->pause();
 	}
@@ -377,7 +318,6 @@ void LocalPasscodeEnter::forgetAndCheck() {
 }
 
 void LocalPasscodeEnter::leaveArea() {
-	_passcode.clear();
 	if (_countdown) {
 		_countdown->pause();
 	}
@@ -387,7 +327,6 @@ void LocalPasscodeEnter::leaveArea() {
 
 void LocalPasscodeEnter::checkBeforeClose(Fn<void()> close) {
 	if (enterType() != EnterType::Change
-		|| _passcode.empty()
 		|| !_stepData) {
 		close();
 		return;
@@ -398,12 +337,8 @@ void LocalPasscodeEnter::checkBeforeClose(Fn<void()> close) {
 	// bytes go nowhere: a Close that leaves this section alive takes them
 	// straight back out of the any, an instant one destroys the controller
 	// and the carrier together.
-	WritePasscode(_stepData, std::move(_passcode));
 	const auto weak = base::make_weak(this);
 	close();
-	if (weak) {
-		_passcode = TakePasscode(_stepData);
-	}
 }
 
 void LocalPasscodeEnter::setupContent() {
@@ -419,8 +354,6 @@ void LocalPasscodeEnter::setupContent() {
 	const auto isCreate = (enterType() == EnterType::Create);
 	const auto isCheck = (enterType() == EnterType::Check);
 	const auto isChange = (enterType() == EnterType::Change);
-	const auto walletDependent = isChange
-		&& (Wallet::LiveKeyProtection() == Wallet::VaultKind::Passcode);
 
 	auto icon = CreateLottieIcon(
 		content,
@@ -477,8 +410,6 @@ void LocalPasscodeEnter::setupContent() {
 		addDescription(tr::lng_passcode_about1());
 		Ui::AddSkip(content);
 		addDescription(tr::lng_passcode_about2());
-	} else {
-		addDescription(tr::lng_settings_passcode_wallet_about());
 	}
 
 	Ui::AddSkip(content, st::settingLocalPasscodeDescriptionBottomSkip);
@@ -490,19 +421,6 @@ void LocalPasscodeEnter::setupContent() {
 			: tr::lng_passcode_enter(),
 		QString());
 
-	const auto meter = walletDependent
-		? [&] {
-			auto object = object_ptr<Ui::PasscodeStrengthMeter>(
-				content,
-				st::defaultPasscodeStrengthMeter);
-			object->setNaturalWidth(st::settingLocalPasscodeInputField.width);
-			return content->add(
-				std::move(object),
-				st::settingLocalPasscodeMeterPadding,
-				style::al_top);
-		}()
-		: nullptr;
-
 	const auto reenterPasscode = isCheck
 		? (Ui::PasswordInput*)(nullptr)
 		: CloudPassword::AddPasswordField(
@@ -513,13 +431,6 @@ void LocalPasscodeEnter::setupContent() {
 		content,
 		isCheck ? newPasscode.get() : reenterPasscode);
 	error->setText(tr::lng_language_name(tr::now));
-
-	if (meter) {
-		connect(newPasscode, &Ui::MaskedInputField::changed, [=] {
-			meter->showCandidate(newPasscode->text());
-			error->hide();
-		});
-	}
 
 	const auto button = content->add(
 		object_ptr<Ui::RoundButton>(
@@ -599,49 +510,6 @@ void LocalPasscodeEnter::setupContent() {
 				OPENSSL_cleanse(newUtf8.data(), newUtf8.size());
 			}
 		});
-		using Result = Wallet::LocalPasscodeChangeResult;
-		Wallet::ChangeLocalPasscode(this, _passcode, newUtf8, [=](
-				Result result) {
-			const auto controller = weakController.get();
-			if (!weak || !controller) {
-				return;
-			}
-			switch (result) {
-			case Result::VaultFailed:
-				setDeriving(false);
-				if (weak && weakController) {
-					showFieldError(tr::lng_wallet_protection_error(tr::now));
-				}
-				return;
-			case Result::Stale:
-				forgetAndCheck();
-				return;
-			case Result::PasscodeFailed:
-				setDeriving(false);
-				if (weak && weakController) {
-					showFieldError(Lang::Hard::SecureSaveError());
-				}
-				return;
-			case Result::CommitFailed:
-				controller->showToast(
-					tr::lng_wallet_protection_passcode_changed_error(tr::now));
-				if (!weak || !weakController) {
-					return;
-				}
-				[[fallthrough]];
-			case Result::Done: {
-				auto changed = newText.toUtf8();
-				const auto cleanse = gsl::finally([&] {
-					if (!changed.isEmpty()) {
-						OPENSSL_cleanse(changed.data(), changed.size());
-					}
-				});
-				WritePasscode(_stepData, Wallet::SecureBytes(changed));
-				_showBack.fire({});
-				return;
-			}
-			}
-		});
 	};
 
 	const auto deriveAndSave = [=](const QString &newText) {
@@ -676,7 +544,6 @@ void LocalPasscodeEnter::setupContent() {
 						OPENSSL_cleanse(created.data(), created.size());
 					}
 				});
-				WritePasscode(_stepData, Wallet::SecureBytes(created));
 				_showOther.fire(LocalPasscodeManageId());
 			}));
 	};
@@ -738,7 +605,6 @@ void LocalPasscodeEnter::setupContent() {
 						OPENSSL_cleanse(accepted.data(), accepted.size());
 					}
 				});
-				WritePasscode(_stepData, Wallet::SecureBytes(accepted));
 				_showOther.fire(LocalPasscodeManageId());
 			}));
 	};
@@ -958,9 +824,7 @@ private:
 	void leaveArea();
 	void disable();
 	void checkVaultAndRemove();
-	void showRemoval(Wallet::SecureBytes verified);
 	void confirmDisable();
-	void disableAfterRemoval(Wallet::KeyProtectionResult result);
 	void removeVerifiedAndLeave();
 
 	rpl::variable<bool> _isBottomFillerShown;
@@ -968,7 +832,6 @@ private:
 	QPointer<Ui::RpWidget> _disableButton;
 	QPointer<Ui::RpWidget> _pinnedBottom;
 	std::any *_stepData = nullptr;
-	Wallet::SecureBytes _passcode;
 	std::unique_ptr<PasscodeCountdown> _countdown;
 	rpl::variable<bool> _busy = false;
 
@@ -1007,11 +870,6 @@ void LocalPasscodeManage::setStepDataReference(std::any &data) {
 	// passcode to ask for. That happens one turn later, because this still
 	// runs inside the navigation that creates the section.
 	_stepData = &data;
-	_passcode = TakePasscode(_stepData);
-	if (!_passcode.empty()) {
-		_countdown->restart();
-		return;
-	}
 	crl::on_main(this, [=] {
 		const auto &local = controller()->session().domain().local();
 		showOther(local.hasPasscode()
@@ -1051,18 +909,6 @@ void LocalPasscodeManage::touched() {
 	}
 }
 
-void LocalPasscodeManage::mintVerification(
-		Fn<void(Storage::PasscodeVerification)> done) {
-	Wallet::MintVerificationOnWorker(this, _passcode, [=](
-			std::optional<Storage::PasscodeVerification> verification) {
-		if (!verification) {
-			forgetAndCheck();
-		} else {
-			done(*verification);
-		}
-	});
-}
-
 void LocalPasscodeManage::writeRefused() {
 	LOG(("App Error: key_data refused a passcode verification minted in the "
 		"same callback."));
@@ -1074,13 +920,11 @@ void LocalPasscodeManage::forgetAndCheck() {
 		leaveArea();
 		return;
 	}
-	_passcode.clear();
 	_countdown->pause();
 	showOther(LocalPasscodeCheckId());
 }
 
 void LocalPasscodeManage::leaveArea() {
-	_passcode.clear();
 	_countdown->pause();
 	LeavePasscodeArea(this, controller(), [=] { _showBack.fire({}); });
 }
@@ -1111,8 +955,6 @@ void LocalPasscodeManage::setupContent() {
 		auto passOther = crl::guard(this, [=, this](Type type) {
 			if (_busy.current()) {
 				return;
-			} else if (type == LocalPasscodeChange::Id()) {
-				WritePasscode(_stepData, std::move(_passcode));
 			}
 			showOther(type);
 		});
@@ -1144,86 +986,8 @@ void LocalPasscodeManage::setupContent() {
 
 void LocalPasscodeManage::disable() {
 	setBusy(true);
-	if (Wallet::LiveKeyProtection() == Wallet::VaultKind::Passcode) {
-		checkVaultAndRemove();
-	} else {
-		confirmDisable();
-	}
-}
+    confirmDisable();
 
-// The retained bytes are revalidated on the worker before the chooser
-// receives them. It opens the shared Passcode wrap only when the chosen
-// policy needs to replace it. The final key_data removal derives and spends
-// a fresh verification after that one keyring write has completed.
-void LocalPasscodeManage::checkVaultAndRemove() {
-	auto utf8 = Utf8Copy(_passcode);
-	const auto cleanse = gsl::finally([&] {
-		if (!utf8.isEmpty()) {
-			OPENSSL_cleanse(utf8.data(), utf8.size());
-		}
-	});
-	const auto &local = controller()->session().domain().local();
-	Storage::DeriveOnWorker(
-		local.prepareOpen(utf8),
-		crl::guard(this, [=](Storage::PasscodeDerivation &&derived) {
-			const auto &local = controller()->session().domain().local();
-			if (!local.checkPasscode(std::move(derived))) {
-				forgetAndCheck();
-			} else {
-				showRemoval(_passcode.copy());
-			}
-		}));
-}
-
-void LocalPasscodeManage::showRemoval(Wallet::SecureBytes verified) {
-	if (Wallet::LiveKeyProtection() != Wallet::VaultKind::Passcode) {
-		confirmDisable();
-		return;
-	}
-	auto accounts = std::vector<base::weak_ptr<Main::Account>>();
-	auto &domain = controller()->session().domain();
-	auto &runtime = domain.walletKeyring();
-	const auto live = runtime.liveKeyring(runtime.reading().keyring);
-	for (const auto &[index, account] : domain.accounts()) {
-		const auto session = account->maybeSession();
-		if (session && ranges::any_of(live.entries, [&](const auto &entry) {
-			return entry.accountId == session->uniqueId();
-		})) {
-			accounts.push_back(base::make_weak(account.get()));
-		}
-	}
-	const auto weak = base::make_weak(this);
-	const auto weakController = base::make_weak(controller());
-	const auto show = Main::MakeSessionShow(
-		controller()->uiShow(),
-		&controller()->session());
-	Wallet::ShowKeyProtectionBox(show, Wallet::KeyProtectionArgs{
-		.mode = Wallet::KeyProtectionMode::Removal,
-		.accounts = std::move(accounts),
-		.done = [=](Wallet::KeyProtectionResult result) {
-			if (weak && weakController) {
-				weak->disableAfterRemoval(std::move(result));
-			}
-		},
-	}, std::move(verified));
-}
-
-void LocalPasscodeManage::disableAfterRemoval(
-		Wallet::KeyProtectionResult result) {
-	if (result.cancelled) {
-		setBusy(false);
-		return;
-	} else if (result.failed) {
-		controller()->showToast(tr::lng_wallet_protection_error(tr::now));
-		setBusy(false);
-		return;
-	} else if (result.kind == Wallet::VaultKind::Passcode) {
-		controller()->showToast(
-			tr::lng_settings_passcode_lock_off_wallet(tr::now));
-		setBusy(false);
-		return;
-	}
-	removeVerifiedAndLeave();
 }
 
 void LocalPasscodeManage::removeVerifiedAndLeave() {
@@ -1234,12 +998,6 @@ void LocalPasscodeManage::removeVerifiedAndLeave() {
 	const auto weak = base::make_weak(this);
 	const auto weakController = base::make_weak(controller());
 	mintVerification([=](Storage::PasscodeVerification verification) {
-		if (Wallet::LiveKeyProtection() == Wallet::VaultKind::Passcode) {
-			weakController->showToast(
-				tr::lng_wallet_protection_error(tr::now));
-			setBusy(false);
-			return;
-		}
 		const auto result = RemovePasscode(controller(), verification);
 		if (!weak || !weakController) {
 			return;
@@ -1264,8 +1022,7 @@ void LocalPasscodeManage::confirmDisable() {
 	// the wording the app-lock toggle already shows, composed with
 	// today's confirmation instead of given a key of its own. A vault
 	// that holds no key has nothing to cover, and nothing is said.
-	const auto warned = (Wallet::LiveKeyProtection() == Wallet::VaultKind::Open)
-		&& controller()->session().domain().local().appLockEnabled();
+	const auto warned = controller()->session().domain().local().appLockEnabled();
 	auto text = [&]() -> rpl::producer<QString> {
 		if (!warned) {
 			return tr::lng_settings_passcode_disable_sure();
@@ -1284,20 +1041,11 @@ void LocalPasscodeManage::confirmDisable() {
 				close();
 				return;
 			}
-			const auto [needsRemoval, needsWarning] = [&] {
-				const auto policy = Wallet::LiveKeyProtection();
-				const auto &local = weakController->session().domain().local();
-				return std::pair(
-					policy == Wallet::VaultKind::Passcode,
-					policy == Wallet::VaultKind::Open && local.appLockEnabled());
-			}();
+
 			close();
 			if (!weak || !weakController) {
 				return;
-			} else if (needsRemoval) {
-				weak->checkVaultAndRemove();
-				return;
-			} else if (needsWarning && !warned) {
+			} else if ( !warned) {
 				weak->confirmDisable();
 				return;
 			}
@@ -1377,14 +1125,6 @@ void BuildManageContent(
 	) | rpl::then(local.localPasscodeChanged() | rpl::map([] {
 		return Core::App().domain().local().appLockEnabled();
 	}));
-	state->walletDependent = rpl::single(
-		rpl::empty
-	) | rpl::then(rpl::merge(
-		local.localPasscodeChanged(),
-		controller->session().wallet().keyProtectionUpdates())
-	) | rpl::map([] {
-		return (Wallet::LiveKeyProtection() == Wallet::VaultKind::Passcode);
-	});
 
 	builder.addSkip();
 
@@ -1479,10 +1219,6 @@ void BuildManageContent(
 		}) | rpl::on_next([=](bool value) {
 			if (value) {
 				lockOn();
-			} else {
-				// The row is shown only while the wallet policy is Passcode.
-				lockOff(Wallet::LiveKeyProtection()
-					== Wallet::VaultKind::Passcode);
 			}
 		}, lockApp->lifetime());
 	}
