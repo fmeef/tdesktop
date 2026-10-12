@@ -227,12 +227,6 @@ EntitiesInText EntitiesFromMTP(
 				d.voffset().v,
 				d.vlength().v,
 			});
-		}, [&](const MTPDmessageEntityTonAddress &d) {
-			result.push_back({
-				EntityType::TonAddress,
-				d.voffset().v,
-				d.vlength().v,
-			});
 		}, [&](const MTPDmessageEntitySpoiler &d) {
 			result.push_back({
 				EntityType::Spoiler,

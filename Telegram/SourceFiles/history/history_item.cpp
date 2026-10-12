@@ -6337,6 +6337,7 @@ void HistoryItem::setServiceMessageByAction(const MTPmessageAction &action) {
 	auto preparePaymentSent = [&](const MTPDmessageActionPaymentSent &) {
 		return preparePaymentSentText();
 	};
+
 	auto preparePaymentSentMe = [&](const MTPDmessageActionPaymentSentMe &data) {
 		auto result = PreparedServiceText();
 		result.text = (data.is_recurring_used()
@@ -8686,6 +8687,7 @@ PreparedServiceText HistoryItem::preparePaymentSentText() {
 	}
 	return result;
 }
+
 
 PreparedServiceText HistoryItem::prepareStoryMentionText() {
 	auto result = PreparedServiceText();

@@ -73,7 +73,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat.h" // popupMenuExpandedSeparator
 #include "styles/style_menu_icons.h"
 #include "styles/style_settings.h"
-#include "styles/style_wallet.h"
 #include "styles/style_window.h"
 #include "styles/style_window_main_menu.h"
 
@@ -721,26 +720,6 @@ void MainMenu::setupMenu() {
 			controller->showPeerHistory(controller->session().user());
 		});
 		const auto session = &controller->session();
-		const auto wallet = _menu->add(
-			object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(
-				_menu,
-				CreateButtonWithIcon(
-					_menu,
-					tr::lng_wallet_menu(),
-					st::mainMenuButton,
-					{ &st::walletMenuIcon })));
-		Ui::NewBadge::AddAfterButtonText(
-			wallet->entity(),
-			tr::lng_wallet_menu(),
-			st::mainMenuButton);
-		wallet->toggleOn(session->appConfig().value(
-		) | rpl::map([=] {
-			return session->appConfig().walletAvailable();
-		}) | rpl::distinct_until_changed());
-		wallet->finishAnimating();
-		wallet->entity()->setClickedCallback([=] {
-			controller->window().hideSettingsAndLayer();
-		});
 	} else {
 		addAction(
 			tr::lng_profile_add_contact(),

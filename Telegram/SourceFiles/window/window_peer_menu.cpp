@@ -135,7 +135,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_window.h" // st::windowMinWidth
 #include "styles/style_menu_icons.h"
 #include "styles/style_premium.h"
-#include "styles/style_wallet.h"
 
 #include <QAction>
 #include <QtWidgets/QApplication>
@@ -4594,9 +4593,6 @@ void AddSendMoneyAction(
 				ShowAtTheEndMsgId);
 		}
 	};
-	addAction(tr::lng_wallet_profile_send_money(tr::now), [=] {
-
-	}, &st::walletMenuIcon);
 }
 
 void AddSeparatorAndShiftUp(const PeerMenuCallback &addAction) {

@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QByteArray>
 #include <QtCore/QSize>
 #include <QtCore/QString>
+#include <QtCore/QUtf8StringView>
 
 #include <map>
 #include <vector>
@@ -25,7 +26,26 @@ namespace Export {
 struct Settings;
 namespace Data {
 
+
+
 using Utf8String = QByteArray;
+
+struct ActionGramTransfer {
+       int64 amount = 0;
+       Utf8String peerAddress;
+       Utf8String transactionId;
+       Utf8String comment;
+       bool commentEncrypted = false;
+};
+
+struct ActionWalletTonConnectRequest {
+       uint64 sessionId = 0;
+       TimeId expires = 0;
+       Utf8String topic;
+       Utf8String traceId;
+       bool accepted = false;
+       bool declined = false;
+};
 
 inline constexpr auto kNanosInGram = int64(1'000'000'000);
 
@@ -1109,22 +1129,6 @@ struct ActionManagedBotCreated {
 	UserId botId = 0;
 };
 
-struct ActionGramTransfer {
-	int64 amount = 0;
-	Utf8String peerAddress;
-	Utf8String transactionId;
-	Utf8String comment;
-	bool commentEncrypted = false;
-};
-
-struct ActionWalletTonConnectRequest {
-	uint64 sessionId = 0;
-	TimeId expires = 0;
-	Utf8String topic;
-	Utf8String traceId;
-	bool accepted = false;
-	bool declined = false;
-};
 
 struct ServiceAction {
 	std::variant<
@@ -1187,9 +1191,9 @@ struct ServiceAction {
 		ActionNoForwardsRequest,
 		ActionNewCreatorPending,
 		ActionChangeCreator,
-		ActionManagedBotCreated,
-		ActionGramTransfer,
-		ActionWalletTonConnectRequest> content;
+        ActionGramTransfer,
+        ActionWalletTonConnectRequest,
+		ActionManagedBotCreated> content;
 };
 
 ServiceAction ParseServiceAction(

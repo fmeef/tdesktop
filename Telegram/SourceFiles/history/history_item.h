@@ -743,7 +743,6 @@ private:
 	void clearDependencyMessage();
 	void setupChatThemeChange();
 	void setupTTLChange();
-
 	void translationToggle(
 		not_null<HistoryMessageTranslation*> translation,
 		bool used);
